@@ -191,7 +191,7 @@
         const ytdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(ytdPct);
 
         const ytdEl = document.getElementById('kpi-ytd-diff');
-        ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' vs PY (' + (ytdPct >= 0 ? '+' : '') + ytdPctFormatted + ')';
+        ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' (' + (ytdPct >= 0 ? '+' : '') + ytdPctFormatted + ')';
         ytdEl.className = 'sub-value ' + (ytdDiff >= 0 ? 'positive' : 'negative');
 
         // --- Month To Date KPI ---
@@ -202,7 +202,7 @@
         const mtdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mtdPct);
 
         const mtdEl = document.getElementById('kpi-mtd-diff');
-        mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' vs PY (' + (mtdPct >= 0 ? '+' : '') + mtdPctFormatted + ')';
+        mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' (' + (mtdPct >= 0 ? '+' : '') + mtdPctFormatted + ')';
         mtdEl.className = 'sub-value ' + (mtdDiff >= 0 ? 'positive' : 'negative');
 
         // --- Today & Projection KPIs ---
