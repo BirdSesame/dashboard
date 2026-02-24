@@ -183,20 +183,29 @@
 
         const kpis = data.kpis;
 
+        // --- Year To Date KPI ---
         document.getElementById('kpi-ytd').innerText = formatCurrency(kpis['Total_YTD']);
 
         const ytdDiff = parseFloat(kpis['Total_YTD_Diff']);
+        const ytdPct = parseFloat(kpis['YTD_PCT']);
+        const ytdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(ytdPct);
+
         const ytdEl = document.getElementById('kpi-ytd-diff');
-        ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' vs PY';
+        ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' vs PY (' + (ytdPct >= 0 ? '+' : '') + ytdPctFormatted + ')';
         ytdEl.className = 'sub-value ' + (ytdDiff >= 0 ? 'positive' : 'negative');
 
+        // --- Month To Date KPI ---
         document.getElementById('kpi-mtd').innerText = formatCurrency(kpis['Total_Month']);
 
         const mtdDiff = parseFloat(kpis['Total_MTD_Diff']);
+        const mtdPct = parseFloat(kpis['Month_PCT']);
+        const mtdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mtdPct);
+
         const mtdEl = document.getElementById('kpi-mtd-diff');
-        mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' vs PY';
+        mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' vs PY (' + (mtdPct >= 0 ? '+' : '') + mtdPctFormatted + ')';
         mtdEl.className = 'sub-value ' + (mtdDiff >= 0 ? 'positive' : 'negative');
 
+        // --- Today & Projection KPIs ---
         document.getElementById('kpi-today').innerText = formatCurrency(kpis['Total_Today']);
         document.getElementById('kpi-proj').innerText = formatCurrency(kpis['Year_Proj']);
 
