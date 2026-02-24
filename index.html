@@ -1,249 +1,301 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-        }
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background-color: var(--bg-color);
-            color: var(--text-main);
-        }
-        #loading {
-            text-align: center;
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            margin-top: 50px;
-        }
-        /* KPI Grid Styles */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-            display: none; /* Hidden until loaded */
-        }
-        .kpi-card {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .kpi-card h3 {
-            margin: 0 0 10px 0;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-        }
-        .kpi-card .value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin: 0;
-        }
-        .kpi-card .sub-value {
-            font-size: 0.85rem;
-            margin-top: 5px;
-        }
-        .positive { color: #16a34a; }
-        .negative { color: #dc2626; }
-        
-        /* Chart Styles */
-        .chart-wrapper {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: none; /* Hidden until loaded */
-        }
-        .chart-container { 
-            position: relative; 
-            height: 50vh; 
-            width: 100%; 
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+    }
+
+    #loading {
+      text-align: center;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      margin-top: 50px;
+    }
+
+    /* --- Desktop First KPI Grid --- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+      display: none;
+      /* Hidden until loaded */
+    }
+
+    .kpi-card {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .kpi-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-card .value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin: 0;
+    }
+
+    .kpi-card .sub-value {
+      font-size: 0.85rem;
+      margin-top: 5px;
+    }
+
+    .positive {
+      color: #16a34a;
+    }
+
+    .negative {
+      color: #dc2626;
+    }
+
+    /* --- Chart Styles --- */
+    .chart-wrapper {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: none;
+      /* Hidden until loaded */
+    }
+
+    .chart-container {
+      position: relative;
+      height: 55vh;
+      /* Responsive height for desktop */
+      width: 100%;
+    }
+
+    /* --- Mobile Responsiveness --- */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+        /* Less wasted space on the edges */
+      }
+
+      .kpi-grid {
+        /* Snap to a 2x2 grid on tablets and phones to save vertical scrolling */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .kpi-card {
+        padding: 15px 10px;
+      }
+
+      .kpi-card .value {
+        font-size: 1.4rem;
+        /* Prevent large numbers from overflowing */
+      }
+
+      .chart-wrapper {
+        padding: 15px 10px;
+      }
+
+      .chart-container {
+        height: 400px;
+        /* Fixed height so mobile browser toolbars don't resize the chart */
+      }
+    }
+
+    @media (max-width: 400px) {
+      .kpi-grid {
+        /* Stack 1-by-1 only on extremely narrow phones */
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-    <div id="loading">Loading dashboard data...</div>
+  <div id="loading">Loading dashboard data...</div>
 
-    <div class="kpi-grid" id="kpiGrid">
-        <div class="kpi-card">
-            <h3>Today</h3>
-            <p class="value" id="kpi-today">--</p>
-        </div>
-        <div class="kpi-card">
-            <h3>Month</h3>
-            <p class="value" id="kpi-mtd">--</p>
-            <p class="sub-value" id="kpi-mtd-diff">--</p>
-        </div>
-        <div class="kpi-card">
-            <h3>Year</h3>
-            <p class="value" id="kpi-ytd">--</p>
-            <p class="sub-value" id="kpi-ytd-diff">--</p>
-        </div>
-        <div class="kpi-card">
-            <h3>End of Year Projection</h3>
-            <p class="value" id="kpi-proj">--</p>
-        </div>
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card">
+      <h3>Today</h3>
+      <p class="value" id="kpi-today">--</p>
     </div>
-
-    <div class="chart-wrapper" id="chartWrapper">
-        <div class="chart-container">
-            <canvas id="ytdChart"></canvas>
-        </div>
+    <div class="kpi-card">
+      <h3>Month</h3>
+      <p class="value" id="kpi-mtd">--</p>
+      <p class="sub-value" id="kpi-mtd-diff">--</p>
     </div>
+    <div class="kpi-card">
+      <h3>Year</h3>
+      <p class="value" id="kpi-ytd">--</p>
+      <p class="sub-value" id="kpi-ytd-diff">--</p>
+    </div>
+    <div class="kpi-card">
+      <h3>End of Year Projection</h3>
+      <p class="value" id="kpi-proj">--</p>
+    </div>
+  </div>
 
-    <script>
-        // --- PASTE YOUR WEB APP URL HERE ---
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwG3l4XVyKLplI17_oD_nG4XutSzyeY1MHD7IficZWY_bShM2nWaDE4tGLKB7a-fm87/exec';
+  <div class="chart-wrapper" id="chartWrapper">
+    <div class="chart-container">
+      <canvas id="ytdChart"></canvas>
+    </div>
+  </div>
 
-        // Helper function to format currency
-        const formatCurrency = (val) => {
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
-        };
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwG3l4XVyKLplI17_oD_nG4XutSzyeY1MHD7IficZWY_bShM2nWaDE4tGLKB7a-fm87/exec';
 
-        async function buildDashboard() {
-            try {
-                const response = await fetch(API_URL, { 
-    method: 'GET',
-    redirect: 'follow' 
-});
-                const data = await response.json();
+    const formatCurrency = (val) => {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+    };
 
-                // 1. Populate KPIs
-                const kpis = data.kpis;
-                
-                document.getElementById('kpi-ytd').innerText = formatCurrency(kpis['Total_YTD']);
-                
-                // Format YTD Diff with + or -
-                const ytdDiff = parseFloat(kpis['Total_YTD_Diff']);
-                const ytdEl = document.getElementById('kpi-ytd-diff');
-                ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' vs PY';
-                ytdEl.className = 'sub-value ' + (ytdDiff >= 0 ? 'positive' : 'negative');
+    async function buildDashboard() {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        const data = await response.json();
 
-                document.getElementById('kpi-mtd').innerText = formatCurrency(kpis['Total_Month']);
-                
-                // Format MTD Diff
-                const mtdDiff = parseFloat(kpis['Total_MTD_Diff']);
-                const mtdEl = document.getElementById('kpi-mtd-diff');
-                mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' vs PY';
-                mtdEl.className = 'sub-value ' + (mtdDiff >= 0 ? 'positive' : 'negative');
+        const kpis = data.kpis;
 
-                document.getElementById('kpi-today').innerText = formatCurrency(kpis['Total_Today']);
-                document.getElementById('kpi-proj').innerText = formatCurrency(kpis['Year_Proj']);
+        document.getElementById('kpi-ytd').innerText = formatCurrency(kpis['Total_YTD']);
 
-    // 2. Render Chart
-                const ctx = document.getElementById('ytdChart').getContext('2d');
-                
-                // Find where the current year data stops (the first null value returned from Apps Script)
-                let lastDataIndex = data.chart.current.findIndex(val => val === null);
-                if (lastDataIndex === -1) lastDataIndex = 365; // Fallback for the end of the year
-                
-                // Slice the data arrays so they only go up to the current day
-                const currentDataSliced = data.chart.current.slice(0, lastDataIndex);
-                const historicalDataSliced = data.chart.historical.slice(0, lastDataIndex);
+        const ytdDiff = parseFloat(kpis['Total_YTD_Diff']);
+        const ytdEl = document.getElementById('kpi-ytd-diff');
+        ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' vs PY';
+        ytdEl.className = 'sub-value ' + (ytdDiff >= 0 ? 'positive' : 'negative');
 
-                // Create the labels array to match the new, shorter length
-                const labels = Array.from({length: lastDataIndex}, (_, i) => {
-                    const d = new Date(new Date().getFullYear(), 0, i + 1);
-                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                });
+        document.getElementById('kpi-mtd').innerText = formatCurrency(kpis['Total_Month']);
 
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'Current Year YTD',
-                                data: currentDataSliced,
-                                borderColor: '#2563eb',
-                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.1,
-                                pointRadius: 0,
-                                pointHoverRadius: 5
-                            },
-                            {
-                                label: 'Prior Year',
-                                data: historicalDataSliced,
-                                borderColor: '#94a3b8',
-                                borderDash: [5, 5],
-                                borderWidth: 2,
-                                fill: false,
-                                tension: 0.1,
-                                pointRadius: 0,
-                                pointHoverRadius: 5
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            title: { display: true, text: 'YTD Revenue Pacing', font: { size: 16 } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) { label += ': '; }
-                                        if (context.parsed.y !== null) {
-                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
-                                        }
-                                        return label;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: { 
-                                grid: { display: false },
-                                ticks: {
-                                    maxRotation: 0,
-                                    autoSkip: false,
-                                    callback: function(value, index) {
-                                        // Still only display the month name on the 1st day of each month
-                                        const d = new Date(new Date().getFullYear(), 0, index + 1);
-                                        if (d.getDate() === 1) {
-                                            return d.toLocaleDateString('en-US', { month: 'short' });
-                                        }
-                                        return null; 
-                                    }
-                                }
-                            },
-                            y: {
-                                title: { display: true, text: 'Cumulative Sales' },
-                                ticks: { callback: function(value) { return '$' + value.toLocaleString(); } }
-                            }
-                        }
+        const mtdDiff = parseFloat(kpis['Total_MTD_Diff']);
+        const mtdEl = document.getElementById('kpi-mtd-diff');
+        mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' vs PY';
+        mtdEl.className = 'sub-value ' + (mtdDiff >= 0 ? 'positive' : 'negative');
+
+        document.getElementById('kpi-today').innerText = formatCurrency(kpis['Total_Today']);
+        document.getElementById('kpi-proj').innerText = formatCurrency(kpis['Year_Proj']);
+
+        const ctx = document.getElementById('ytdChart').getContext('2d');
+
+        let lastDataIndex = data.chart.current.findIndex(val => val === null);
+        if (lastDataIndex === -1) lastDataIndex = 365;
+
+        const currentDataSliced = data.chart.current.slice(0, lastDataIndex);
+        const historicalDataSliced = data.chart.historical.slice(0, lastDataIndex);
+
+        const labels = Array.from({ length: lastDataIndex }, (_, i) => {
+          const d = new Date(new Date().getFullYear(), 0, i + 1);
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Current Year YTD',
+                data: currentDataSliced,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.1,
+                pointRadius: 0,
+                pointHoverRadius: 5
+              },
+              {
+                label: 'Prior Year',
+                data: historicalDataSliced,
+                borderColor: '#94a3b8',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                fill: false,
+                tension: 0.1,
+                pointRadius: 0,
+                pointHoverRadius: 5
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              title: { display: true, text: 'YTD Revenue Pacing', font: { size: 16 } },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let label = context.dataset.label || '';
+                    if (label) { label += ': '; }
+                    if (context.parsed.y !== null) {
+                      label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
                     }
-                });
-
-                // Hide loading text, show dashboard
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('kpiGrid').style.display = 'grid';
-                document.getElementById('chartWrapper').style.display = 'block';
-
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
-                document.getElementById('loading').innerText = 'Error loading dashboard. Please check the Web App URL.';
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  maxRotation: 0,
+                  autoSkip: false,
+                  callback: function (value, index) {
+                    const d = new Date(new Date().getFullYear(), 0, index + 1);
+                    if (d.getDate() === 1) {
+                      return d.toLocaleDateString('en-US', { month: 'short' });
+                    }
+                    return null;
+                  }
+                }
+              },
+              y: {
+                title: { display: true, text: 'Cumulative Sales' },
+                ticks: { callback: function (value) { return '$' + value.toLocaleString(); } }
+              }
             }
-        }
+          }
+        });
 
-        buildDashboard();
-    </script>
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('kpiGrid').style.display = 'grid';
+        document.getElementById('chartWrapper').style.display = 'block';
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        document.getElementById('loading').innerText = 'Error loading dashboard. Please check the Web App URL.';
+      }
+    }
+
+    buildDashboard();
+  </script>
 </body>
+
 </html>
