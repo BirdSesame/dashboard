@@ -38,7 +38,6 @@
       gap: 15px;
       margin-bottom: 20px;
       display: none;
-      /* Hidden until loaded */
     }
 
     .kpi-card {
@@ -77,6 +76,49 @@
       color: #dc2626;
     }
 
+    /* --- All Time High Section --- */
+    .ath-card {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      text-align: center;
+      display: none;
+      /* Hidden until loaded */
+    }
+
+    .ath-card h3 {
+      margin: 0 0 15px 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+
+    .ath-list {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .ath-item .value {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin: 0;
+    }
+
+    .ath-item .sub-value {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
     /* --- Chart Styles --- */
     .chart-wrapper {
       background-color: var(--card-bg);
@@ -84,13 +126,11 @@
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       display: none;
-      /* Hidden until loaded */
     }
 
     .chart-container {
       position: relative;
       height: 55vh;
-      /* Responsive height for desktop */
       width: 100%;
     }
 
@@ -98,11 +138,9 @@
     @media (max-width: 768px) {
       body {
         padding: 10px;
-        /* Less wasted space on the edges */
       }
 
       .kpi-grid {
-        /* Snap to a 2x2 grid on tablets and phones to save vertical scrolling */
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
       }
@@ -113,7 +151,19 @@
 
       .kpi-card .value {
         font-size: 1.4rem;
-        /* Prevent large numbers from overflowing */
+      }
+
+      .ath-card {
+        padding: 15px 10px;
+      }
+
+      .ath-list {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .ath-item .value {
+        font-size: 1.4rem;
       }
 
       .chart-wrapper {
@@ -122,13 +172,11 @@
 
       .chart-container {
         height: 400px;
-        /* Fixed height so mobile browser toolbars don't resize the chart */
       }
     }
 
     @media (max-width: 400px) {
       .kpi-grid {
-        /* Stack 1-by-1 only on extremely narrow phones */
         grid-template-columns: 1fr;
       }
     }
@@ -157,6 +205,12 @@
     <div class="kpi-card">
       <h3>End of Year Projection</h3>
       <p class="value" id="kpi-proj">--</p>
+    </div>
+  </div>
+
+  <div class="ath-card" id="athCard">
+    <h3>All Time High</h3>
+    <div class="ath-list" id="athList">
     </div>
   </div>
 
@@ -214,9 +268,75 @@
         let lastDataIndex = data.chart.current.findIndex(val => val === null);
         if (lastDataIndex === -1) lastDataIndex = 365;
 
+        // Arrays for the chart
         const currentDataSliced = data.chart.current.slice(0, lastDataIndex);
         const historicalDataSliced = data.chart.historical.slice(0, lastDataIndex);
 
+        // --- Calculate Top 3 Months of All Time ---
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const allMonthsRev = [];
+
+        const currentYear = new Date().getFullYear();
+        const priorYear = currentYear - 1;
+
+        // 1. Process Prior Year (Historical Data - Full Array)
+        let prevHistCumulative = 0;
+        const priorYearMonthly = Array(12).fill(0);
+        for (let i = 0; i < data.chart.historical.length; i++) {
+          const currentCumulative = data.chart.historical[i] || prevHistCumulative;
+          const dailyRev = currentCumulative - prevHistCumulative;
+
+          const d = new Date(priorYear, 0, i + 1);
+          priorYearMonthly[d.getMonth()] += dailyRev;
+
+          prevHistCumulative = currentCumulative;
+        }
+
+        priorYearMonthly.forEach((rev, index) => {
+          if (rev > 0) {
+            allMonthsRev.push({ name: `${monthNames[index]} ${priorYear}`, rev: rev });
+          }
+        });
+
+        // 2. Process Current Year (Current Data - Up to today)
+        let prevCurrCumulative = 0;
+        const currentYearMonthly = Array(12).fill(0);
+        for (let i = 0; i < lastDataIndex; i++) {
+          const currentCumulative = currentDataSliced[i] || prevCurrCumulative;
+          const dailyRev = currentCumulative - prevCurrCumulative;
+
+          const d = new Date(currentYear, 0, i + 1);
+          currentYearMonthly[d.getMonth()] += dailyRev;
+
+          prevCurrCumulative = currentCumulative;
+        }
+
+        currentYearMonthly.forEach((rev, index) => {
+          if (rev > 0) {
+            allMonthsRev.push({ name: `${monthNames[index]} ${currentYear}`, rev: rev });
+          }
+        });
+
+        // 3. Sort Combined Data and Grab Top 3
+        const top3Months = allMonthsRev
+          .sort((a, b) => b.rev - a.rev)
+          .slice(0, 3);
+
+        // Render the list inside the single card
+        const athListContainer = document.getElementById('athList');
+        athListContainer.innerHTML = '';
+
+        top3Months.forEach((month, index) => {
+          const item = document.createElement('div');
+          item.className = 'ath-item';
+          item.innerHTML = `
+            <p class="value">${formatCurrency(month.rev)}</p>
+            <p class="sub-value">#${index + 1} &bull; ${month.name}</p>
+          `;
+          athListContainer.appendChild(item);
+        });
+
+        // --- Chart Configuration ---
         const labels = Array.from({ length: lastDataIndex }, (_, i) => {
           const d = new Date(new Date().getFullYear(), 0, i + 1);
           return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -293,8 +413,10 @@
           }
         });
 
+        // Show all the components once data is loaded
         document.getElementById('loading').style.display = 'none';
         document.getElementById('kpiGrid').style.display = 'grid';
+        document.getElementById('athCard').style.display = 'block';
         document.getElementById('chartWrapper').style.display = 'block';
 
       } catch (error) {
