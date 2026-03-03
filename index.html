@@ -263,8 +263,17 @@
 
     async function buildDashboard() {
       try {
-        const response = await fetch(API_URL, {
+        // Create a unique timestamp
+        const cacheBuster = new Date().getTime();
+
+        // Append it to the URL and add strict no-cache headers
+        const response = await fetch(`${API_URL}?t=${cacheBuster}`, {
           method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
           redirect: 'follow'
         });
         const data = await response.json();
