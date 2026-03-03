@@ -34,10 +34,26 @@
     /* --- Desktop First KPI Grid --- */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(12, 1fr);
+      /* 12-column base for precision */
       gap: 15px;
       margin-bottom: 20px;
       display: none;
+    }
+
+    /* Top Row: 4 Cards (each spans 3 columns: 4x3=12) */
+    .kpi-card:nth-child(1),
+    .kpi-card:nth-child(2),
+    .kpi-card:nth-child(3),
+    .kpi-card:nth-child(4) {
+      grid-column: span 3;
+    }
+
+    /* Bottom Row: 3 Cards (each spans 4 columns: 3x4=12) */
+    .kpi-card:nth-child(5),
+    .kpi-card:nth-child(6),
+    .kpi-card:nth-child(7) {
+      grid-column: span 4;
     }
 
     .kpi-card {
@@ -66,14 +82,15 @@
     .kpi-card .sub-value {
       font-size: 0.85rem;
       margin-top: 5px;
+      color: var(--text-muted);
     }
 
     .positive {
-      color: #16a34a;
+      color: #16a34a !important;
     }
 
     .negative {
-      color: #dc2626;
+      color: #dc2626 !important;
     }
 
     /* --- All Time High Section --- */
@@ -85,7 +102,6 @@
       margin-bottom: 20px;
       text-align: center;
       display: none;
-      /* Hidden until loaded */
     }
 
     .ath-card h3 {
@@ -140,13 +156,15 @@
         padding: 10px;
       }
 
-      .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+      /* Force 2 cards per row on mobile */
+      .kpi-card {
+        grid-column: span 6 !important;
+        padding: 15px 10px;
       }
 
-      .kpi-card {
-        padding: 15px 10px;
+      /* Make the odd 7th card span the full width so it doesn't look awkward */
+      .kpi-card:nth-child(7) {
+        grid-column: span 12 !important;
       }
 
       .kpi-card .value {
@@ -176,8 +194,10 @@
     }
 
     @media (max-width: 400px) {
-      .kpi-grid {
-        grid-template-columns: 1fr;
+
+      /* Force 1 card per row on very small screens */
+      .kpi-card {
+        grid-column: span 12 !important;
       }
     }
   </style>
@@ -189,8 +209,22 @@
 
   <div class="kpi-grid" id="kpiGrid">
     <div class="kpi-card">
+      <h3>Yesterday</h3>
+      <p class="value" id="kpi-yesterday">--</p>
+    </div>
+    <div class="kpi-card">
       <h3>Today</h3>
       <p class="value" id="kpi-today">--</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Last 7 Days</h3>
+      <p class="value" id="kpi-7d">--</p>
+      <p class="sub-value" id="kpi-7d-avg">--</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Last 30 Days</h3>
+      <p class="value" id="kpi-30d">--</p>
+      <p class="sub-value" id="kpi-30d-avg">--</p>
     </div>
     <div class="kpi-card">
       <h3>Month</h3>
@@ -203,7 +237,7 @@
       <p class="sub-value" id="kpi-ytd-diff">--</p>
     </div>
     <div class="kpi-card">
-      <h3>End of Year Projection</h3>
+      <h3>Proj. End of Year</h3>
       <p class="value" id="kpi-proj">--</p>
     </div>
   </div>
@@ -239,81 +273,93 @@
 
         // --- Year To Date KPI ---
         document.getElementById('kpi-ytd').innerText = formatCurrency(kpis['Total_YTD']);
-
         const ytdDiff = parseFloat(kpis['Total_YTD_Diff']);
         const ytdPct = parseFloat(kpis['YTD_PCT']);
         const ytdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(ytdPct);
-
         const ytdEl = document.getElementById('kpi-ytd-diff');
         ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' (' + (ytdPct >= 0 ? '+' : '') + ytdPctFormatted + ')';
         ytdEl.className = 'sub-value ' + (ytdDiff >= 0 ? 'positive' : 'negative');
 
         // --- Month To Date KPI ---
         document.getElementById('kpi-mtd').innerText = formatCurrency(kpis['Total_Month']);
-
         const mtdDiff = parseFloat(kpis['Total_MTD_Diff']);
         const mtdPct = parseFloat(kpis['Month_PCT']);
         const mtdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mtdPct);
-
         const mtdEl = document.getElementById('kpi-mtd-diff');
         mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' (' + (mtdPct >= 0 ? '+' : '') + mtdPctFormatted + ')';
         mtdEl.className = 'sub-value ' + (mtdDiff >= 0 ? 'positive' : 'negative');
 
-        // --- Today & Projection KPIs ---
+        // --- Standard KPIs ---
+        document.getElementById('kpi-yesterday').innerText = formatCurrency(kpis['Total_YDay']);
         document.getElementById('kpi-today').innerText = formatCurrency(kpis['Total_Today']);
         document.getElementById('kpi-proj').innerText = formatCurrency(kpis['Year_Proj']);
 
-        const ctx = document.getElementById('ytdChart').getContext('2d');
+        // --- NEW: 7-Day and 30-Day KPIs ---
+        // Ensure these keys match your Apps Script JSON output
+        document.getElementById('kpi-7d').innerText = formatCurrency(kpis['Total_7Day']);
+        document.getElementById('kpi-7d-avg').innerText = formatCurrency(kpis['Avg_7Day']) + ' / day avg';
 
+        document.getElementById('kpi-30d').innerText = formatCurrency(kpis['Total_30Day']);
+        document.getElementById('kpi-30d-avg').innerText = formatCurrency(kpis['Avg_30Day']) + ' / day avg';
+
+        // --- Chart Prep ---
+        const ctx = document.getElementById('ytdChart').getContext('2d');
         let lastDataIndex = data.chart.current.findIndex(val => val === null);
         if (lastDataIndex === -1) lastDataIndex = 365;
 
-        // Arrays for the chart
         const currentDataSliced = data.chart.current.slice(0, lastDataIndex);
         const historicalDataSliced = data.chart.historical.slice(0, lastDataIndex);
 
-        // --- Calculate Top 3 Months of All Time ---
+        // --- Calculate Top 3 Months of All Time (WITH AVERAGES) ---
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const allMonthsRev = [];
 
         const currentYear = new Date().getFullYear();
         const priorYear = currentYear - 1;
 
-        // 1. Process Prior Year (Historical Data - Full Array)
+        // 1. Process Prior Year (Historical Data)
         let prevHistCumulative = 0;
         const priorYearMonthly = Array(12).fill(0);
         for (let i = 0; i < data.chart.historical.length; i++) {
           const currentCumulative = data.chart.historical[i] || prevHistCumulative;
           const dailyRev = currentCumulative - prevHistCumulative;
-
           const d = new Date(priorYear, 0, i + 1);
           priorYearMonthly[d.getMonth()] += dailyRev;
-
           prevHistCumulative = currentCumulative;
         }
 
         priorYearMonthly.forEach((rev, index) => {
           if (rev > 0) {
-            allMonthsRev.push({ name: `${monthNames[index]} ${priorYear}`, rev: rev });
+            // Get total days in that specific month for the prior year
+            const daysInMonth = new Date(priorYear, index + 1, 0).getDate();
+            const avg = rev / daysInMonth;
+            allMonthsRev.push({ name: `${monthNames[index]} ${priorYear}`, rev: rev, avg: avg });
           }
         });
 
         // 2. Process Current Year (Current Data - Up to today)
         let prevCurrCumulative = 0;
         const currentYearMonthly = Array(12).fill(0);
+        const currentYearMonthlyDays = Array(12).fill(0);
+
         for (let i = 0; i < lastDataIndex; i++) {
           const currentCumulative = currentDataSliced[i] || prevCurrCumulative;
           const dailyRev = currentCumulative - prevCurrCumulative;
 
           const d = new Date(currentYear, 0, i + 1);
-          currentYearMonthly[d.getMonth()] += dailyRev;
+          const monthIndex = d.getMonth();
+
+          currentYearMonthly[monthIndex] += dailyRev;
+          currentYearMonthlyDays[monthIndex]++;
 
           prevCurrCumulative = currentCumulative;
         }
 
         currentYearMonthly.forEach((rev, index) => {
           if (rev > 0) {
-            allMonthsRev.push({ name: `${monthNames[index]} ${currentYear}`, rev: rev });
+            const daysPassed = currentYearMonthlyDays[index];
+            const avg = rev / daysPassed;
+            allMonthsRev.push({ name: `${monthNames[index]} ${currentYear}`, rev: rev, avg: avg });
           }
         });
 
@@ -322,7 +368,7 @@
           .sort((a, b) => b.rev - a.rev)
           .slice(0, 3);
 
-        // Render the list inside the single card
+        // Render the list with the new average included
         const athListContainer = document.getElementById('athList');
         athListContainer.innerHTML = '';
 
@@ -331,7 +377,7 @@
           item.className = 'ath-item';
           item.innerHTML = `
             <p class="value">${formatCurrency(month.rev)}</p>
-            <p class="sub-value">#${index + 1} &bull; ${month.name}</p>
+            <p class="sub-value">#${index + 1} &bull; ${month.name} &bull; ${formatCurrency(month.avg)}/day</p>
           `;
           athListContainer.appendChild(item);
         });
