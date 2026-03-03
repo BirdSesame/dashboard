@@ -263,17 +263,12 @@
 
     async function buildDashboard() {
       try {
-        // Create a unique timestamp
+        // Create a unique timestamp to trick the CDN
         const cacheBuster = new Date().getTime();
 
-        // Append it to the URL and add strict no-cache headers
+        // Append it to the URL, but leave the strict headers out to prevent CORS errors
         const response = await fetch(`${API_URL}?t=${cacheBuster}`, {
           method: 'GET',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          },
           redirect: 'follow'
         });
         const data = await response.json();
