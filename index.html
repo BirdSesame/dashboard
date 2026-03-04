@@ -35,38 +35,28 @@
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
-      /* 12-column base for precision */
       gap: 15px;
       margin-bottom: 20px;
       display: none;
     }
 
-    /* Top Row: 4 Cards (each spans 3 columns: 4x3=12) */
-    .kpi-card:nth-child(1),
-    .kpi-card:nth-child(2),
-    .kpi-card:nth-child(3),
-    .kpi-card:nth-child(4) {
-      grid-column: span 3;
-    }
-
-    /* Bottom Row: 3 Cards (each spans 4 columns: 3x4=12) */
-    .kpi-card:nth-child(5),
-    .kpi-card:nth-child(6),
-    .kpi-card:nth-child(7) {
-      grid-column: span 4;
-    }
-
+    /* All 8 Cards now cleanly span 3 columns (4 per row) */
     .kpi-card {
+      grid-column: span 3;
       background-color: var(--card-bg);
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
 
     .kpi-card h3 {
       margin: 0 0 10px 0;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       text-transform: uppercase;
       color: var(--text-muted);
       letter-spacing: 0.5px;
@@ -80,17 +70,29 @@
     }
 
     .kpi-card .sub-value {
-      font-size: 0.85rem;
+      font-size: 0.95rem;
       margin-top: 5px;
       color: var(--text-muted);
     }
 
-    .positive {
-      color: #16a34a !important;
+    /* --- Pill Badges --- */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-top: 8px;
     }
 
-    .negative {
-      color: #dc2626 !important;
+    .badge-positive {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-negative {
+      background-color: #fee2e2;
+      color: #991b1b;
     }
 
     /* --- All Time High Section --- */
@@ -121,6 +123,14 @@
       gap: 15px;
     }
 
+    /* --- All Time High Typography --- */
+    .ath-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
     .ath-item .value {
       font-size: 1.6rem;
       font-weight: bold;
@@ -128,11 +138,17 @@
       margin: 0;
     }
 
-    .ath-item .sub-value {
+    .ath-item .ath-rank-date {
       font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .ath-item .ath-avg {
+      font-size: 0.85rem;
       color: var(--text-muted);
-      margin-top: 5px;
-      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     /* --- Chart Styles --- */
@@ -156,15 +172,10 @@
         padding: 10px;
       }
 
-      /* Force 2 cards per row on mobile */
+      /* Forces exactly 2 cards per row on mobile */
       .kpi-card {
         grid-column: span 6 !important;
         padding: 15px 10px;
-      }
-
-      /* Make the odd 7th card span the full width so it doesn't look awkward */
-      .kpi-card:nth-child(7) {
-        grid-column: span 12 !important;
       }
 
       .kpi-card .value {
@@ -226,19 +237,24 @@
       <p class="value" id="kpi-30d">--</p>
       <p class="sub-value" id="kpi-30d-avg">--</p>
     </div>
+
     <div class="kpi-card">
       <h3>Month</h3>
       <p class="value" id="kpi-mtd">--</p>
-      <p class="sub-value" id="kpi-mtd-diff">--</p>
+      <div id="kpi-mtd-diff"></div>
     </div>
     <div class="kpi-card">
       <h3>Year</h3>
       <p class="value" id="kpi-ytd">--</p>
-      <p class="sub-value" id="kpi-ytd-diff">--</p>
+      <div id="kpi-ytd-diff"></div>
     </div>
     <div class="kpi-card">
-      <h3>Proj. End of Year</h3>
+      <h3>Projected Year</h3>
       <p class="value" id="kpi-proj">--</p>
+    </div>
+    <div class="kpi-card">
+      <h3>Avg Order Value</h3>
+      <p class="value" id="kpi-aov">--</p>
     </div>
   </div>
 
@@ -263,10 +279,7 @@
 
     async function buildDashboard() {
       try {
-        // Create a unique timestamp to trick the CDN
         const cacheBuster = new Date().getTime();
-
-        // Append it to the URL, but leave the strict headers out to prevent CORS errors
         const response = await fetch(`${API_URL}?t=${cacheBuster}`, {
           method: 'GET',
           redirect: 'follow'
@@ -275,14 +288,20 @@
 
         const kpis = data.kpis;
 
+        // --- Average Order Value KPI ---
+        document.getElementById('kpi-aov').innerText = formatCurrency(kpis['AOV'] || 0);
+
         // --- Year To Date KPI ---
         document.getElementById('kpi-ytd').innerText = formatCurrency(kpis['Total_YTD']);
         const ytdDiff = parseFloat(kpis['Total_YTD_Diff']);
         const ytdPct = parseFloat(kpis['YTD_PCT']);
         const ytdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(ytdPct);
         const ytdEl = document.getElementById('kpi-ytd-diff');
-        ytdEl.innerText = (ytdDiff >= 0 ? '+' : '') + formatCurrency(ytdDiff) + ' (' + (ytdPct >= 0 ? '+' : '') + ytdPctFormatted + ')';
-        ytdEl.className = 'sub-value ' + (ytdDiff >= 0 ? 'positive' : 'negative');
+        const ytdIsPos = ytdDiff >= 0;
+
+        ytdEl.innerHTML = `<span class="badge ${ytdIsPos ? 'badge-positive' : 'badge-negative'}">
+          ${ytdIsPos ? '+' : ''}${formatCurrency(ytdDiff)} (${ytdIsPos ? '+' : ''}${ytdPctFormatted})
+        </span>`;
 
         // --- Month To Date KPI ---
         document.getElementById('kpi-mtd').innerText = formatCurrency(kpis['Total_Month']);
@@ -290,21 +309,23 @@
         const mtdPct = parseFloat(kpis['Month_PCT']);
         const mtdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mtdPct);
         const mtdEl = document.getElementById('kpi-mtd-diff');
-        mtdEl.innerText = (mtdDiff >= 0 ? '+' : '') + formatCurrency(mtdDiff) + ' (' + (mtdPct >= 0 ? '+' : '') + mtdPctFormatted + ')';
-        mtdEl.className = 'sub-value ' + (mtdDiff >= 0 ? 'positive' : 'negative');
+        const mtdIsPos = mtdDiff >= 0;
+
+        mtdEl.innerHTML = `<span class="badge ${mtdIsPos ? 'badge-positive' : 'badge-negative'}">
+          ${mtdIsPos ? '+' : ''}${formatCurrency(mtdDiff)} (${mtdIsPos ? '+' : ''}${mtdPctFormatted})
+        </span>`;
 
         // --- Standard KPIs ---
         document.getElementById('kpi-yesterday').innerText = formatCurrency(kpis['Total_YDay']);
         document.getElementById('kpi-today').innerText = formatCurrency(kpis['Total_Today']);
         document.getElementById('kpi-proj').innerText = formatCurrency(kpis['Year_Proj']);
 
-        // --- NEW: 7-Day and 30-Day KPIs ---
-        // Ensure these keys match your Apps Script JSON output
+        // --- 7-Day and 30-Day KPIs ---
         document.getElementById('kpi-7d').innerText = formatCurrency(kpis['Total_7Day']);
-        document.getElementById('kpi-7d-avg').innerText = formatCurrency(kpis['Avg_7Day']) + ' / day avg';
+        document.getElementById('kpi-7d-avg').innerText = formatCurrency(kpis['Avg_7Day']) + '/day';
 
         document.getElementById('kpi-30d').innerText = formatCurrency(kpis['Total_30Day']);
-        document.getElementById('kpi-30d-avg').innerText = formatCurrency(kpis['Avg_30Day']) + ' / day avg';
+        document.getElementById('kpi-30d-avg').innerText = formatCurrency(kpis['Avg_30Day']) + '/day';
 
         // --- Chart Prep ---
         const ctx = document.getElementById('ytdChart').getContext('2d');
@@ -314,14 +335,14 @@
         const currentDataSliced = data.chart.current.slice(0, lastDataIndex);
         const historicalDataSliced = data.chart.historical.slice(0, lastDataIndex);
 
-        // --- Calculate Top 3 Months of All Time (WITH AVERAGES) ---
+        // --- Calculate Top 3 Months of All Time ---
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const allMonthsRev = [];
 
         const currentYear = new Date().getFullYear();
         const priorYear = currentYear - 1;
 
-        // 1. Process Prior Year (Historical Data)
+        // Process Prior Year
         let prevHistCumulative = 0;
         const priorYearMonthly = Array(12).fill(0);
         for (let i = 0; i < data.chart.historical.length; i++) {
@@ -334,14 +355,13 @@
 
         priorYearMonthly.forEach((rev, index) => {
           if (rev > 0) {
-            // Get total days in that specific month for the prior year
             const daysInMonth = new Date(priorYear, index + 1, 0).getDate();
             const avg = rev / daysInMonth;
             allMonthsRev.push({ name: `${monthNames[index]} ${priorYear}`, rev: rev, avg: avg });
           }
         });
 
-        // 2. Process Current Year (Current Data - Up to today)
+        // Process Current Year
         let prevCurrCumulative = 0;
         const currentYearMonthly = Array(12).fill(0);
         const currentYearMonthlyDays = Array(12).fill(0);
@@ -349,13 +369,10 @@
         for (let i = 0; i < lastDataIndex; i++) {
           const currentCumulative = currentDataSliced[i] || prevCurrCumulative;
           const dailyRev = currentCumulative - prevCurrCumulative;
-
           const d = new Date(currentYear, 0, i + 1);
           const monthIndex = d.getMonth();
-
           currentYearMonthly[monthIndex] += dailyRev;
           currentYearMonthlyDays[monthIndex]++;
-
           prevCurrCumulative = currentCumulative;
         }
 
@@ -367,12 +384,12 @@
           }
         });
 
-        // 3. Sort Combined Data and Grab Top 3
+        // Sort and Grab Top 3
         const top3Months = allMonthsRev
           .sort((a, b) => b.rev - a.rev)
           .slice(0, 3);
 
-        // Render the list with the new average included
+        // Render ATH List with new Typography
         const athListContainer = document.getElementById('athList');
         athListContainer.innerHTML = '';
 
@@ -381,7 +398,8 @@
           item.className = 'ath-item';
           item.innerHTML = `
             <p class="value">${formatCurrency(month.rev)}</p>
-            <p class="sub-value">#${index + 1} &bull; ${month.name} &bull; ${formatCurrency(month.avg)}/day</p>
+            <span class="ath-rank-date">#${index + 1} &bull; ${month.name}</span>
+            <span class="ath-avg">${formatCurrency(month.avg)} / day</span>
           `;
           athListContainer.appendChild(item);
         });
@@ -392,6 +410,11 @@
           return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
 
+        // Create a visual gradient for the main line chart
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.4)'); // Blue, slightly opaque at top
+        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); // Fades to transparent at bottom
+
         new Chart(ctx, {
           type: 'line',
           data: {
@@ -401,10 +424,10 @@
                 label: 'Current Year',
                 data: currentDataSliced,
                 borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                backgroundColor: gradient,
                 borderWidth: 3,
                 fill: true,
-                tension: 0.1,
+                tension: 0.4, // Smoother curves
                 pointRadius: 0,
                 pointHoverRadius: 5
               },
@@ -415,7 +438,7 @@
                 borderDash: [5, 5],
                 borderWidth: 2,
                 fill: false,
-                tension: 0.1,
+                tension: 0.4, // Smoother curves
                 pointRadius: 0,
                 pointHoverRadius: 5
               }
@@ -457,6 +480,7 @@
               },
               y: {
                 title: { display: true, text: 'Cumulative Sales' },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' }, // Softer grid lines
                 ticks: { callback: function (value) { return '$' + value.toLocaleString(); } }
               }
             }
