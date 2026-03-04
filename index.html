@@ -270,7 +270,7 @@
   </div>
 
   <script>
-    const API_URL = 'https://raw.githubusercontent.com/BirdSesame/dashboard/main/data.json';
+    const API_URL = 'https://etsy-dashboard-ceaf1-default-rtdb.firebaseio.com/data.json';
 
     const formatCurrency = (val) => {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
@@ -278,11 +278,7 @@
 
     async function buildDashboard() {
       try {
-        const cacheBuster = new Date().getTime();
-        const response = await fetch(`${API_URL}?t=${cacheBuster}`, {
-          method: 'GET',
-          redirect: 'follow'
-        });
+        const response = await fetch(API_URL);
         const data = await response.json();
 
         const kpis = data.kpis;
