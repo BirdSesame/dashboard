@@ -147,7 +147,6 @@
     .ath-item .ath-avg {
       font-size: 0.85rem;
       color: var(--text-muted);
-      text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
@@ -399,7 +398,7 @@
           item.innerHTML = `
             <p class="value">${formatCurrency(month.rev)}</p>
             <span class="ath-rank-date">#${index + 1} &bull; ${month.name}</span>
-            <span class="ath-avg">${formatCurrency(month.avg)} / day</span>
+            <span class="ath-avg">${formatCurrency(month.avg)}/day</span>
           `;
           athListContainer.appendChild(item);
         });
