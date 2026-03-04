@@ -324,8 +324,8 @@
 
         // --- Chart Prep ---
         const ctx = document.getElementById('ytdChart').getContext('2d');
-        let lastDataIndex = data.chart.current.findIndex(val => val === null);
-        if (lastDataIndex === -1) lastDataIndex = 365;
+        let lastDataIndex = data.chart.current.length;
+        if (lastDataIndex === 0) lastDataIndex = 365; // Fallback if no data yet
 
         const currentDataSliced = data.chart.current.slice(0, lastDataIndex);
         const historicalDataSliced = data.chart.historical.slice(0, lastDataIndex);
