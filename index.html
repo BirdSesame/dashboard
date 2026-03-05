@@ -8,6 +8,42 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: var(--text-main);
+    }
+
+    .refresh-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+
+    .refresh-btn:disabled {
+      background-color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+
     :root {
       --primary: #2563eb;
       --bg-color: #f8fafc;
@@ -234,6 +270,10 @@
 
 <body>
 
+  <div class="header">
+    <h2>Sales Dashboard</h2>
+    <button class="refresh-btn" id="refreshBtn" onclick="forceRefresh()">↻ Refresh</button>
+  </div>
   <div id="loading">Loading dashboard data...</div>
 
   <div class="kpi-grid" id="kpiGrid">
@@ -304,11 +344,38 @@
 
   <script>
     const API_URL = 'https://etsy-dashboard-ceaf1-default-rtdb.firebaseio.com/data.json';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxxkDOllAeZuiVDtEpFIbytMFeArP3XOpcMlG_qZh4G8VwgfIiNVX0oo23n-Y5UeHYU/exec'; // The /exec URL from Step 2
 
     const formatCurrency = (val) => {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
     };
+    async function forceRefresh() {
+      const btn = document.getElementById('refreshBtn');
+      btn.innerText = 'Checking Sales...';
+      btn.disabled = true;
 
+      try {
+        // 1. Kick the Google Apps Script awake to check emails
+        // `no-cors` is used because Apps Script doesn't always play nice with standard browser security headers, 
+        // but we just need to trigger it, we don't actually need to read the response payload.
+        await fetch(WEB_APP_URL, { mode: 'no-cors' });
+
+        // 2. Give Firebase half a second to ensure the data is fully settled
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        btn.innerText = 'Updating Dashboard...';
+
+        // 3. Re-fetch the live numbers from Firebase and rebuild the UI
+        await buildDashboard();
+
+      } catch (error) {
+        console.error('Manual refresh failed:', error);
+      }
+
+      // Reset the button
+      btn.innerText = '↻ Refresh';
+      btn.disabled = false;
+    }
     async function buildDashboard() {
       try {
         const response = await fetch(API_URL);
