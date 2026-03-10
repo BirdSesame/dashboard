@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Sales Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -300,11 +301,13 @@
       <h3>Month</h3>
       <p class="value" id="kpi-mtd">--</p>
       <div id="kpi-mtd-diff"></div>
+      <p class="sub-value" id="kpi-mtd-avg">--</p>
     </div>
     <div class="kpi-card">
       <h3>Year</h3>
       <p class="value" id="kpi-ytd">--</p>
       <div id="kpi-ytd-diff"></div>
+      <p class="sub-value" id="kpi-ytd-avg">--</p>
     </div>
     <div class="kpi-card">
       <h3>Projected Year</h3>
@@ -387,9 +390,10 @@
         document.getElementById('kpi-aov').innerText = formatCurrency(kpis['AOV'] || 0);
 
         // --- Year To Date KPI ---
-        document.getElementById('kpi-ytd').innerText = formatCurrency(kpis['Total_YTD']);
-        const ytdDiff = parseFloat(kpis['Total_YTD_Diff']);
-        const ytdPct = parseFloat(kpis['YTD_PCT']);
+        document.getElementById('kpi-ytd').innerText = formatCurrency(kpis['Total_YTD'] || 0);
+        document.getElementById('kpi-ytd-avg').innerText = formatCurrency(kpis['YTD_Daily'] || 0) + '/day';
+        const ytdDiff = parseFloat(kpis['Total_YTD_Diff']) || 0;
+        const ytdPct = parseFloat(kpis['YTD_PCT']) || 0;
         const ytdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(ytdPct);
         const ytdEl = document.getElementById('kpi-ytd-diff');
         const ytdIsPos = ytdDiff >= 0;
@@ -399,9 +403,10 @@
         </span>`;
 
         // --- Month To Date KPI ---
-        document.getElementById('kpi-mtd').innerText = formatCurrency(kpis['Total_Month']);
-        const mtdDiff = parseFloat(kpis['Total_MTD_Diff']);
-        const mtdPct = parseFloat(kpis['Month_PCT']);
+        document.getElementById('kpi-mtd').innerText = formatCurrency(kpis['Total_Month'] || 0);
+        document.getElementById('kpi-mtd-avg').innerText = formatCurrency(kpis['Month_Daily'] || 0) + '/day';
+        const mtdDiff = parseFloat(kpis['Total_MTD_Diff']) || 0;
+        const mtdPct = parseFloat(kpis['Month_PCT']) || 0;
         const mtdPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mtdPct);
         const mtdEl = document.getElementById('kpi-mtd-diff');
         const mtdIsPos = mtdDiff >= 0;
@@ -411,24 +416,44 @@
         </span>`;
 
         // --- Standard KPIs ---
-        document.getElementById('kpi-yesterday').innerText = formatCurrency(kpis['Total_YDay']);
-        document.getElementById('kpi-today').innerText = formatCurrency(kpis['Total_Today']);
-        document.getElementById('kpi-proj').innerText = formatCurrency(kpis['Year_Proj']);
+        document.getElementById('kpi-yesterday').innerText = formatCurrency(kpis['Total_YDay'] || 0);
+        document.getElementById('kpi-today').innerText = formatCurrency(kpis['Total_Today'] || 0);
+        document.getElementById('kpi-proj').innerText = formatCurrency(kpis['Year_Proj'] || 0);
 
         // --- 7-Day and 30-Day KPIs ---
-        document.getElementById('kpi-7d').innerText = formatCurrency(kpis['Total_7Day']);
-        document.getElementById('kpi-7d-avg').innerText = formatCurrency(kpis['Avg_7Day']) + '/day';
+        document.getElementById('kpi-7d').innerText = formatCurrency(kpis['Total_7Day'] || 0);
+        document.getElementById('kpi-7d-avg').innerText = formatCurrency(kpis['Avg_7Day'] || 0) + '/day';
 
-        document.getElementById('kpi-30d').innerText = formatCurrency(kpis['Total_30Day']);
-        document.getElementById('kpi-30d-avg').innerText = formatCurrency(kpis['Avg_30Day']) + '/day';
+        document.getElementById('kpi-30d').innerText = formatCurrency(kpis['Total_30Day'] || 0);
+        document.getElementById('kpi-30d-avg').innerText = formatCurrency(kpis['Avg_30Day'] || 0) + '/day';
 
-        // --- Chart Prep ---
+        // --- Chart Prep & Normalization ---
         const ctx = document.getElementById('ytdChart').getContext('2d');
-        let lastDataIndex = data.chart.current.length;
-        if (lastDataIndex === 0) lastDataIndex = 365; // Fallback if no data yet
 
-        const currentDataSliced = data.chart.current.slice(0, lastDataIndex);
-        const historicalDataSliced = data.chart.historical.slice(0, lastDataIndex);
+        // Calculate current day of year (1-366)
+        const today = new Date();
+        const startOfYear = new Date(today.getFullYear(), 0, 0);
+        const currentDayIndex = Math.floor((today - startOfYear) / 864e5);
+
+        // Normalize function to fill gaps and pad to desired length
+        // This handles cases where Firebase deletes 'null' entries or the data is stale
+        const normalize = (val, len) => {
+          const arr = [];
+          let last = 0;
+          for (let i = 0; i < len; i++) {
+            const v = (val && (val[i] !== undefined && val[i] !== null)) ? val[i] : last;
+            last = v;
+            arr.push(v);
+          }
+          return arr;
+        };
+
+        const currentNormalized = normalize(data.chart.current, currentDayIndex);
+        const historicalNormalized = normalize(data.chart.historical, 366);
+
+        let lastDataIndex = currentNormalized.length;
+        const currentDataSliced = currentNormalized;
+        const historicalDataSliced = historicalNormalized.slice(0, lastDataIndex);
 
         // --- Recent Performance Charts (Trailing 7 & 30 Days, excluding today) ---
         const getDailyData = (cumulativeArr, count) => {
@@ -449,8 +474,8 @@
           return { daily, labels };
         };
 
-        const data7d = getDailyData(data.chart.current, 7);
-        const data30d = getDailyData(data.chart.current, 30);
+        const data7d = getDailyData(currentNormalized, 7);
+        const data30d = getDailyData(currentNormalized, 30);
 
         const commonBarOptions = (title) => ({
           responsive: true,
@@ -506,8 +531,8 @@
         // Process Prior Year
         let prevHistCumulative = 0;
         const priorYearMonthly = Array(12).fill(0);
-        for (let i = 0; i < data.chart.historical.length; i++) {
-          const currentCumulative = data.chart.historical[i] || prevHistCumulative;
+        for (let i = 0; i < historicalNormalized.length; i++) {
+          const currentCumulative = historicalNormalized[i] || prevHistCumulative;
           const dailyRev = currentCumulative - prevHistCumulative;
           const d = new Date(priorYear, 0, i + 1);
           priorYearMonthly[d.getMonth()] += dailyRev;
@@ -588,7 +613,7 @@
                 backgroundColor: gradient,
                 borderWidth: 3,
                 fill: true,
-                tension: 0.4, // Smoother curves
+                tension: 0.2, // Smoother curves
                 pointRadius: 0,
                 pointHoverRadius: 5
               },
@@ -599,7 +624,7 @@
                 borderDash: [5, 5],
                 borderWidth: 2,
                 fill: false,
-                tension: 0.4, // Smoother curves
+                tension: 0.2, // Smoother curves
                 pointRadius: 0,
                 pointHoverRadius: 5
               }
