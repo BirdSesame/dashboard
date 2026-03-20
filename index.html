@@ -604,16 +604,6 @@
           athListContainer.appendChild(item);
         });
 
-        // --- Chart Configuration ---
-        const labels = Array.from({ length: lastDataIndex }, (_, i) => {
-          const d = new Date(new Date().getFullYear(), 0, i + 1);
-          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        });
-
-        // Create a visual gradient for the main line chart
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.4)'); // Blue, slightly opaque at top
-        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); // Fades to transparent at bottom
 
         new Chart(ctx, {
           type: 'bar',
