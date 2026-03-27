@@ -432,8 +432,9 @@
 
         // Calculate current day of year (1-366)
         const today = new Date();
-        const startOfYear = new Date(today.getFullYear(), 0, 0);
-        const currentDayIndex = Math.floor((today - startOfYear) / 864e5);
+        const utcToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+        const utcStartOfYear = new Date(Date.UTC(today.getFullYear(), 0, 0));
+        const currentDayIndex = Math.round((utcToday - utcStartOfYear) / 864e5);
 
         // Normalize function to fill gaps and pad to desired length
         const normalize = (val, len) => {
@@ -454,7 +455,7 @@
         const getDailyData = (cumulativeArr, count) => {
           const daily = [];
           const labels = [];
-          const endIdx = cumulativeArr.length - 2; 
+          const endIdx = cumulativeArr.length - 2;
           const startIdx = Math.max(0, endIdx - count + 1);
 
           for (let i = endIdx; i >= startIdx; i--) {
