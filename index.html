@@ -439,10 +439,8 @@
         // Normalize function to fill gaps and pad to desired length
         const normalize = (val, len) => {
           const arr = [];
-          let last = 0;
           for (let i = 0; i < len; i++) {
-            const v = (val && (val[i] !== undefined && val[i] !== null)) ? val[i] : last;
-            last = v;
+            const v = (val && (val[i] !== undefined && val[i] !== null)) ? val[i] : 0;
             arr.push(v);
           }
           return arr;
@@ -452,19 +450,18 @@
         const historicalNormalized = normalize(data.chart.historical, 366);
 
         // --- Recent Performance Charts (Trailing 7 & 30 Days) ---
-        const getDailyData = (cumulativeArr, count) => {
+        const getDailyData = (dailyArr, count) => {
           const daily = [];
           const labels = [];
-          const endIdx = cumulativeArr.length - 2;
+          const endIdx = dailyArr.length - 2;
           const startIdx = Math.max(0, endIdx - count + 1);
 
           for (let i = endIdx; i >= startIdx; i--) {
-            const current = cumulativeArr[i];
-            const previous = i > 0 ? cumulativeArr[i - 1] : 0;
-            daily.unshift(current - previous);
+            const current = dailyArr[i] || 0;
+            daily.unshift(current);
 
             const d = new Date();
-            d.setDate(d.getDate() - (cumulativeArr.length - 1 - i));
+            d.setDate(d.getDate() - (dailyArr.length - 1 - i));
             labels.unshift(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
           }
           return { daily, labels };
@@ -474,16 +471,13 @@
         const data30d = getDailyData(currentNormalized, 30);
 
         // --- Monthly Aggregation for YTD Chart ---
-        const aggregateMonthly = (cumulativeArr, totalLen = 366) => {
+        const aggregateMonthly = (dailyArr, totalLen = 366) => {
           const monthly = new Array(12).fill(0);
           const year = new Date().getFullYear();
-          let prev = 0;
-          for (let i = 0; i < cumulativeArr.length; i++) {
-            const current = cumulativeArr[i];
-            const daily = current - prev;
+          for (let i = 0; i < dailyArr.length; i++) {
+            const daily = dailyArr[i] || 0;
             const d = new Date(year, 0, i + 1);
             monthly[d.getMonth()] += daily;
-            prev = current;
           }
           return monthly;
         };
@@ -544,14 +538,11 @@
         const priorYear = currentYear - 1;
 
         // Process Prior Year
-        let prevHistCumulative = 0;
         const priorYearMonthly = Array(12).fill(0);
         for (let i = 0; i < historicalNormalized.length; i++) {
-          const currentCumulative = historicalNormalized[i] || prevHistCumulative;
-          const dailyRev = currentCumulative - prevHistCumulative;
+          const dailyRev = historicalNormalized[i] || 0;
           const d = new Date(priorYear, 0, i + 1);
           priorYearMonthly[d.getMonth()] += dailyRev;
-          prevHistCumulative = currentCumulative;
         }
 
         priorYearMonthly.forEach((rev, index) => {
@@ -563,18 +554,15 @@
         });
 
         // Process Current Year
-        let prevCurrCumulative = 0;
         const currentYearMonthly = Array(12).fill(0);
         const currentYearMonthlyDays = Array(12).fill(0);
 
         for (let i = 0; i < currentNormalized.length; i++) {
-          const currentCumulative = currentNormalized[i] || prevCurrCumulative;
-          const dailyRev = currentCumulative - prevCurrCumulative;
+          const dailyRev = currentNormalized[i] || 0;
           const d = new Date(currentYear, 0, i + 1);
           const monthIndex = d.getMonth();
           currentYearMonthly[monthIndex] += dailyRev;
           currentYearMonthlyDays[monthIndex]++;
-          prevCurrCumulative = currentCumulative;
         }
 
         currentYearMonthly.forEach((rev, index) => {
