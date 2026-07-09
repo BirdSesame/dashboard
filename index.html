@@ -266,6 +266,146 @@
         grid-column: span 12 !important;
       }
     }
+
+    /* --- Custom Date Analysis Section --- */
+    .custom-analysis-card {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .custom-analysis-card h3 {
+      margin: 0 0 15px 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+
+    .custom-analysis-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-end;
+    }
+
+    .date-inputs-row {
+      display: flex;
+      gap: 15px;
+      flex-grow: 1;
+    }
+
+    .date-inputs-row .control-group {
+      flex: 1;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .quick-select-group {
+      flex-grow: 2;
+    }
+
+    .control-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .control-group input[type="date"] {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      background-color: var(--card-bg);
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .control-group input[type="date"]:focus {
+      border-color: var(--primary);
+    }
+
+    .quick-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .quick-btn {
+      background-color: #f1f5f9;
+      color: var(--text-main);
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .quick-btn:hover {
+      background-color: #e2e8f0;
+    }
+
+    .quick-btn.active {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .custom-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .custom-kpi-grid .kpi-card {
+      grid-column: auto !important;
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .custom-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .custom-analysis-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+      }
+      .date-inputs-row {
+        width: 100%;
+      }
+      .quick-select-group {
+        width: 100%;
+      }
+      .quick-btn {
+        flex: 1 1 calc(50% - 8px);
+        text-align: center;
+      }
+    }
   </style>
 </head>
 
@@ -343,7 +483,57 @@
     </div>
   </div>
 
+  <!-- --- Custom Date Analysis Section --- -->
+  <div class="custom-analysis-card" id="customAnalysisSection" style="display: none;">
+    <h3>Custom Date Range Analysis</h3>
+    
+    <div class="custom-analysis-controls">
+      <div class="date-inputs-row">
+        <div class="control-group">
+          <label for="customStartDate">Start Date</label>
+          <input type="date" id="customStartDate" onchange="handleDateChange()">
+        </div>
+        <div class="control-group">
+          <label for="customEndDate">End Date</label>
+          <input type="date" id="customEndDate" onchange="handleDateChange()">
+        </div>
+      </div>
+      <div class="control-group quick-select-group">
+        <label>Quick Select</label>
+        <div class="quick-btns">
+          <button type="button" class="quick-btn" id="btn-quick-last7" onclick="setQuickRange('last7')">Last 7 Days</button>
+          <button type="button" class="quick-btn" id="btn-quick-last30" onclick="setQuickRange('last30')">Last 30 Days</button>
+          <button type="button" class="quick-btn" id="btn-quick-last90" onclick="setQuickRange('last90')">Last 90 Days</button>
+          <button type="button" class="quick-btn" id="btn-quick-ytd" onclick="setQuickRange('ytd')">This Year YTD</button>
+          <button type="button" class="quick-btn" id="btn-quick-priorYear" onclick="setQuickRange('priorYear')">Last Year</button>
+        </div>
+      </div>
+    </div>
 
+    <div class="custom-kpi-grid" id="customKpiGrid">
+      <div class="kpi-card">
+        <h3>Range Total</h3>
+        <p class="value" id="custom-kpi-total">$0</p>
+        <div id="custom-kpi-total-diff"></div>
+      </div>
+      <div class="kpi-card">
+        <h3>Range Daily Avg</h3>
+        <p class="value" id="custom-kpi-avg">$0</p>
+        <div id="custom-kpi-avg-diff"></div>
+      </div>
+      <div class="kpi-card">
+        <h3>Days in Range</h3>
+        <p class="value" id="custom-kpi-days">0</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- --- Custom Date Range Chart Wrapper --- -->
+  <div class="chart-wrapper" id="customChartWrapper" style="display: none; margin-bottom: 20px;">
+    <div class="chart-container">
+      <canvas id="customRangeChart"></canvas>
+    </div>
+  </div>
 
   <script>
     const API_URL = 'https://etsy-dashboard-ceaf1-default-rtdb.firebaseio.com/data.json';
@@ -352,6 +542,34 @@
     const formatCurrency = (val) => {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
     };
+
+    const commonBarOptions = (title) => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: { display: true, text: title, font: { size: 14 } },
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => formatCurrency(ctx.parsed.y)
+          }
+        }
+      },
+      scales: {
+        y: { ticks: { callback: (val) => '$' + val.toLocaleString() } },
+        x: { grid: { display: false } }
+      }
+    });
+
+    let allDataPoints = [];
+    let customChartInstance = null;
+
+    function formatLocalDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
     async function forceRefresh() {
       const btn = document.getElementById('refreshBtn');
       btn.innerText = 'Checking Sales...';
@@ -385,6 +603,62 @@
         const data = await response.json();
 
         const kpis = data.kpis;
+
+        // Parse daily data points into unified array
+        allDataPoints = [];
+        const currentYear = new Date().getFullYear();
+        const priorYear = currentYear - 1;
+
+        if (data.chart) {
+          const historical = data.chart.historical || [];
+          for (let i = 0; i < historical.length; i++) {
+            const d = new Date(priorYear, 0, i + 1);
+            const val = (historical[i] !== null && historical[i] !== undefined) ? historical[i] : 0;
+            allDataPoints.push({
+              date: d,
+              dateStr: formatLocalDate(d),
+              value: val
+            });
+          }
+
+          const current = data.chart.current || [];
+          for (let i = 0; i < current.length; i++) {
+            const d = new Date(currentYear, 0, i + 1);
+            const val = (current[i] !== null && current[i] !== undefined) ? current[i] : 0;
+            allDataPoints.push({
+              date: d,
+              dateStr: formatLocalDate(d),
+              value: val
+            });
+          }
+        }
+
+        // Initialize custom date pickers
+        if (allDataPoints.length > 0) {
+          const maxDateStr = allDataPoints[allDataPoints.length - 1].dateStr;
+          const minDateStr = allDataPoints[0].dateStr;
+
+          const startInput = document.getElementById('customStartDate');
+          const endInput = document.getElementById('customEndDate');
+
+          startInput.min = minDateStr;
+          startInput.max = maxDateStr;
+          endInput.min = minDateStr;
+          endInput.max = maxDateStr;
+
+          // Default range: last 90 days of available data
+          const defaultStartIndex = Math.max(0, allDataPoints.length - 90);
+          const defaultStartDateStr = allDataPoints[defaultStartIndex].dateStr;
+
+          startInput.value = defaultStartDateStr;
+          endInput.value = maxDateStr;
+          
+          // Clear active status on all and set last 90 days active
+          const buttons = document.querySelectorAll('.quick-btn');
+          buttons.forEach(btn => btn.classList.remove('active'));
+          const btn90 = document.getElementById('btn-quick-last90');
+          if (btn90) btn90.classList.add('active');
+        }
 
         // --- Average Order Value KPI ---
         document.getElementById('kpi-aov').innerText = formatCurrency(kpis['AOV'] || 0);
@@ -486,23 +760,7 @@
         const historicalMonthly = aggregateMonthly(historicalNormalized);
         const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-        const commonBarOptions = (title) => ({
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: { display: true, text: title, font: { size: 14 } },
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => formatCurrency(ctx.parsed.y)
-              }
-            }
-          },
-          scales: {
-            y: { ticks: { callback: (val) => '$' + val.toLocaleString() } },
-            x: { grid: { display: false } }
-          }
-        });
+        
 
         new Chart(document.getElementById('trailing7Chart'), {
           type: 'bar',
@@ -534,10 +792,7 @@
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const allMonthsRev = [];
 
-        const currentYear = new Date().getFullYear();
-        const priorYear = currentYear - 1;
-
-        // Process Prior Year
+                // Process Prior Year
         const priorYearMonthly = Array(12).fill(0);
         for (let i = 0; i < historicalNormalized.length; i++) {
           const dailyRev = historicalNormalized[i] || 0;
@@ -640,11 +895,219 @@
         document.getElementById('athCard').style.display = 'block';
         document.getElementById('chartWrapper').style.display = 'block';
         document.getElementById('recentChartsGrid').style.display = 'grid';
+        document.getElementById('customAnalysisSection').style.display = 'block';
+        document.getElementById('customChartWrapper').style.display = 'block';
+
+        // Run initial custom analysis (defaults to last 90 days set above)
+        updateCustomAnalysis();
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         document.getElementById('loading').innerText = 'Error loading dashboard. Please check the Web App URL.';
       }
+    }
+
+    function handleDateChange() {
+      // Clear active class from all quick select buttons
+      const buttons = document.querySelectorAll('.quick-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      
+      updateCustomAnalysis();
+    }
+
+    function setQuickRange(rangeType) {
+      if (allDataPoints.length === 0) return;
+
+      const maxDate = allDataPoints[allDataPoints.length - 1].date;
+      const maxDateStr = allDataPoints[allDataPoints.length - 1].dateStr;
+      
+      let startDateStr = maxDateStr;
+
+      if (rangeType === 'last7') {
+        const start = new Date(maxDate);
+        start.setDate(start.getDate() - 6);
+        startDateStr = formatLocalDate(start);
+      } else if (rangeType === 'last30') {
+        const start = new Date(maxDate);
+        start.setDate(start.getDate() - 29);
+        startDateStr = formatLocalDate(start);
+      } else if (rangeType === 'last90') {
+        const start = new Date(maxDate);
+        start.setDate(start.getDate() - 89);
+        startDateStr = formatLocalDate(start);
+      } else if (rangeType === 'ytd') {
+        const start = new Date(maxDate.getFullYear(), 0, 1);
+        startDateStr = formatLocalDate(start);
+      } else if (rangeType === 'priorYear') {
+        const start = new Date(maxDate.getFullYear() - 1, 0, 1);
+        const end = new Date(maxDate.getFullYear() - 1, 11, 31);
+        startDateStr = formatLocalDate(start);
+        document.getElementById('customStartDate').value = startDateStr;
+        document.getElementById('customEndDate').value = formatLocalDate(end);
+        
+        // Update active class
+        const buttons = document.querySelectorAll('.quick-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-quick-${rangeType}`).classList.add('active');
+        
+        updateCustomAnalysis();
+        return;
+      }
+
+      document.getElementById('customStartDate').value = startDateStr;
+      document.getElementById('customEndDate').value = maxDateStr;
+
+      // Update active class
+      const buttons = document.querySelectorAll('.quick-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`btn-quick-${rangeType}`).classList.add('active');
+
+      updateCustomAnalysis();
+    }
+
+    function updateCustomAnalysis() {
+      const startVal = document.getElementById('customStartDate').value;
+      const endVal = document.getElementById('customEndDate').value;
+
+      if (!startVal || !endVal) return;
+
+      const startDate = new Date(startVal + 'T00:00:00');
+      const endDate = new Date(endVal + 'T00:00:00');
+
+      // Filter data points
+      const filtered = allDataPoints.filter(p => {
+        const pDate = new Date(p.dateStr + 'T00:00:00');
+        return pDate >= startDate && pDate <= endDate;
+      });
+
+      const numDays = filtered.length;
+
+      if (numDays === 0) {
+        document.getElementById('custom-kpi-total').innerText = formatCurrency(0);
+        document.getElementById('custom-kpi-avg').innerText = formatCurrency(0) + '/day';
+        document.getElementById('custom-kpi-days').innerText = 0;
+        document.getElementById('custom-kpi-total-diff').style.display = 'none';
+        document.getElementById('custom-kpi-avg-diff').style.display = 'none';
+        
+        if (customChartInstance) {
+          customChartInstance.destroy();
+          customChartInstance = null;
+        }
+        return;
+      }
+
+      const totalRevenue = filtered.reduce((s, p) => s + p.value, 0);
+      const dailyAvg = totalRevenue / numDays;
+
+      document.getElementById('custom-kpi-total').innerText = formatCurrency(totalRevenue);
+      document.getElementById('custom-kpi-avg').innerText = formatCurrency(dailyAvg) + '/day';
+      document.getElementById('custom-kpi-days').innerText = numDays;
+
+      // Calculate prior year comparison (if available)
+      const dataMap = new Map(allDataPoints.map(item => [item.dateStr, item.value]));
+      let pyTotal = 0;
+      let pyCount = 0;
+
+      filtered.forEach(p => {
+        const pDate = p.date;
+        const pyDate = new Date(pDate.getFullYear() - 1, pDate.getMonth(), pDate.getDate());
+        const pyDateStr = formatLocalDate(pyDate);
+        if (dataMap.has(pyDateStr)) {
+          pyTotal += dataMap.get(pyDateStr);
+          pyCount++;
+        }
+      });
+
+      const totalDiffEl = document.getElementById('custom-kpi-total-diff');
+      const avgDiffEl = document.getElementById('custom-kpi-avg-diff');
+
+      if (pyCount === numDays && pyTotal > 0) {
+        const totalDiff = totalRevenue - pyTotal;
+        const totalPct = totalDiff / pyTotal;
+        const totalPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(totalPct);
+        const totalIsPos = totalDiff >= 0;
+
+        totalDiffEl.innerHTML = `<span class="badge ${totalIsPos ? 'badge-positive' : 'badge-negative'}">
+          ${totalIsPos ? '+' : ''}${formatCurrency(totalDiff)} (${totalIsPos ? '+' : ''}${totalPctFormatted})
+        </span>`;
+        totalDiffEl.style.display = 'block';
+
+        const avgDiff = dailyAvg - (pyTotal / numDays);
+        const avgPct = avgDiff / (pyTotal / numDays);
+        const avgPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(avgPct);
+        const avgIsPos = avgDiff >= 0;
+
+        avgDiffEl.innerHTML = `<span class="badge ${avgIsPos ? 'badge-positive' : 'badge-negative'}">
+          ${avgIsPos ? '+' : ''}${formatCurrency(avgDiff)}/day (${avgIsPos ? '+' : ''}${avgPctFormatted})
+        </span>`;
+        avgDiffEl.style.display = 'block';
+      } else {
+        totalDiffEl.style.display = 'none';
+        avgDiffEl.style.display = 'none';
+      }
+
+      // Prepare Chart Data based on range length
+      let labels = [];
+      let chartData = [];
+      let timeLabel = '';
+
+      if (numDays <= 31) {
+        // Daily
+        labels = filtered.map(p => p.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        chartData = filtered.map(p => p.value);
+        timeLabel = 'Daily Revenue';
+      } else if (numDays <= 180) {
+        // Weekly
+        const weeks = [];
+        for (let i = 0; i < filtered.length; i += 7) {
+          const chunk = filtered.slice(i, i + 7);
+          const sum = chunk.reduce((s, p) => s + p.value, 0);
+          const startOfWeek = chunk[0].date;
+          const label = startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          weeks.push({ label, value: sum });
+        }
+        labels = weeks.map(w => w.label);
+        chartData = weeks.map(w => w.value);
+        timeLabel = 'Weekly Revenue Aggregate';
+      } else {
+        // Monthly
+        const monthsMap = new Map();
+        filtered.forEach(p => {
+          const y = p.date.getFullYear();
+          const m = p.date.getMonth();
+          const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+          const label = p.date.toLocaleDateString('en-US', { month: 'short' });
+          
+          if (!monthsMap.has(key)) {
+            monthsMap.set(key, { label, sum: 0 });
+          }
+          monthsMap.get(key).sum += p.value;
+        });
+
+        const sortedKeys = Array.from(monthsMap.keys()).sort();
+        labels = sortedKeys.map(k => monthsMap.get(k).label);
+        chartData = sortedKeys.map(k => monthsMap.get(k).sum);
+        timeLabel = 'Monthly Revenue Aggregate';
+      }
+
+      // Recreate custom chart
+      const ctx = document.getElementById('customRangeChart').getContext('2d');
+      if (customChartInstance) {
+        customChartInstance.destroy();
+      }
+
+      customChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: chartData,
+            backgroundColor: 'rgba(37, 99, 235, 0.8)',
+            borderRadius: 4
+          }]
+        },
+        options: commonBarOptions(timeLabel)
+      });
     }
 
     buildDashboard();
