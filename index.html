@@ -367,7 +367,7 @@
 
     .custom-kpi-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 15px;
       margin-top: 20px;
       margin-bottom: 20px;
@@ -501,8 +501,7 @@
       <div class="control-group quick-select-group">
         <label>Quick Select</label>
         <div class="quick-btns">
-          <button type="button" class="quick-btn" id="btn-quick-last7" onclick="setQuickRange('last7')">Last 7 Days</button>
-          <button type="button" class="quick-btn" id="btn-quick-last30" onclick="setQuickRange('last30')">Last 30 Days</button>
+          <button type="button" class="quick-btn" id="btn-quick-last45" onclick="setQuickRange('last45')">Last 45 Days</button>
           <button type="button" class="quick-btn" id="btn-quick-last90" onclick="setQuickRange('last90')">Last 90 Days</button>
           <button type="button" class="quick-btn" id="btn-quick-ytd" onclick="setQuickRange('ytd')">This Year YTD</button>
           <button type="button" class="quick-btn" id="btn-quick-priorYear" onclick="setQuickRange('priorYear')">Last Year</button>
@@ -515,11 +514,7 @@
         <h3>Range Total</h3>
         <p class="value" id="custom-kpi-total">$0</p>
         <div id="custom-kpi-total-diff"></div>
-      </div>
-      <div class="kpi-card">
-        <h3>Range Daily Avg</h3>
-        <p class="value" id="custom-kpi-avg">$0</p>
-        <div id="custom-kpi-avg-diff"></div>
+        <p class="sub-value" id="custom-kpi-avg">$0/day</p>
       </div>
       <div class="kpi-card">
         <h3>Days in Range</h3>
@@ -646,12 +641,14 @@
           endInput.min = minDateStr;
           endInput.max = maxDateStr;
 
-          // Default range: last 90 days of available data
-          const defaultStartIndex = Math.max(0, allDataPoints.length - 90);
+          // Default range: last 90 days ending on yesterday (excluding today)
+          const yesterdayIndex = Math.max(0, allDataPoints.length - 2);
+          const defaultStartIndex = Math.max(0, yesterdayIndex - 89);
           const defaultStartDateStr = allDataPoints[defaultStartIndex].dateStr;
+          const defaultEndDateStr = allDataPoints[yesterdayIndex].dateStr;
 
           startInput.value = defaultStartDateStr;
-          endInput.value = maxDateStr;
+          endInput.value = defaultEndDateStr;
           
           // Clear active status on all and set last 90 days active
           const buttons = document.querySelectorAll('.quick-btn');
@@ -919,48 +916,42 @@
       if (allDataPoints.length === 0) return;
 
       const maxDate = allDataPoints[allDataPoints.length - 1].date;
-      const maxDateStr = allDataPoints[allDataPoints.length - 1].dateStr;
       
-      let startDateStr = maxDateStr;
+      // Yesterday as anchor date for "last" ranges (excluding today)
+      const yesterday = new Date(maxDate);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = formatLocalDate(yesterday);
 
-      if (rangeType === 'last7') {
-        const start = new Date(maxDate);
-        start.setDate(start.getDate() - 6);
-        startDateStr = formatLocalDate(start);
-      } else if (rangeType === 'last30') {
-        const start = new Date(maxDate);
-        start.setDate(start.getDate() - 29);
+      let startDateStr = yesterdayStr;
+      let endDateStr = yesterdayStr;
+
+      if (rangeType === 'last45') {
+        const start = new Date(yesterday);
+        start.setDate(start.getDate() - 44);
         startDateStr = formatLocalDate(start);
       } else if (rangeType === 'last90') {
-        const start = new Date(maxDate);
+        const start = new Date(yesterday);
         start.setDate(start.getDate() - 89);
         startDateStr = formatLocalDate(start);
       } else if (rangeType === 'ytd') {
         const start = new Date(maxDate.getFullYear(), 0, 1);
         startDateStr = formatLocalDate(start);
+        endDateStr = yesterdayStr;
       } else if (rangeType === 'priorYear') {
         const start = new Date(maxDate.getFullYear() - 1, 0, 1);
         const end = new Date(maxDate.getFullYear() - 1, 11, 31);
         startDateStr = formatLocalDate(start);
-        document.getElementById('customStartDate').value = startDateStr;
-        document.getElementById('customEndDate').value = formatLocalDate(end);
-        
-        // Update active class
-        const buttons = document.querySelectorAll('.quick-btn');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-quick-${rangeType}`).classList.add('active');
-        
-        updateCustomAnalysis();
-        return;
+        endDateStr = formatLocalDate(end);
       }
 
       document.getElementById('customStartDate').value = startDateStr;
-      document.getElementById('customEndDate').value = maxDateStr;
+      document.getElementById('customEndDate').value = endDateStr;
 
       // Update active class
       const buttons = document.querySelectorAll('.quick-btn');
       buttons.forEach(btn => btn.classList.remove('active'));
-      document.getElementById(`btn-quick-${rangeType}`).classList.add('active');
+      const activeBtn = document.getElementById(`btn-quick-${rangeType}`);
+      if (activeBtn) activeBtn.classList.add('active');
 
       updateCustomAnalysis();
     }
@@ -987,7 +978,6 @@
         document.getElementById('custom-kpi-avg').innerText = formatCurrency(0) + '/day';
         document.getElementById('custom-kpi-days').innerText = 0;
         document.getElementById('custom-kpi-total-diff').style.display = 'none';
-        document.getElementById('custom-kpi-avg-diff').style.display = 'none';
         
         if (customChartInstance) {
           customChartInstance.destroy();
@@ -1019,7 +1009,6 @@
       });
 
       const totalDiffEl = document.getElementById('custom-kpi-total-diff');
-      const avgDiffEl = document.getElementById('custom-kpi-avg-diff');
 
       if (pyCount === numDays && pyTotal > 0) {
         const totalDiff = totalRevenue - pyTotal;
@@ -1031,19 +1020,8 @@
           ${totalIsPos ? '+' : ''}${formatCurrency(totalDiff)} (${totalIsPos ? '+' : ''}${totalPctFormatted})
         </span>`;
         totalDiffEl.style.display = 'block';
-
-        const avgDiff = dailyAvg - (pyTotal / numDays);
-        const avgPct = avgDiff / (pyTotal / numDays);
-        const avgPctFormatted = new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(avgPct);
-        const avgIsPos = avgDiff >= 0;
-
-        avgDiffEl.innerHTML = `<span class="badge ${avgIsPos ? 'badge-positive' : 'badge-negative'}">
-          ${avgIsPos ? '+' : ''}${formatCurrency(avgDiff)}/day (${avgIsPos ? '+' : ''}${avgPctFormatted})
-        </span>`;
-        avgDiffEl.style.display = 'block';
       } else {
         totalDiffEl.style.display = 'none';
-        avgDiffEl.style.display = 'none';
       }
 
       // Prepare Chart Data based on range length
